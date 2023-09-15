@@ -126,7 +126,6 @@ class Magazine extends Publication {
 }
 class Newspaper extends Publication {
     private String publisherCompany;
-   //SimpleDateFormat dateFormat = new SimpleDateFormat("dd-MM-yyyy");
     private String publicationDay;
     private int popularityCount;
 
@@ -272,7 +271,7 @@ public class LibraryManagementSystem {
     private static void addPublication(Scanner scanner, Library library) {
          System.out.println("Enter Publication Type (1 for Book, 2 for Magazine, 3 for Newspaper): ");
     int publicationType = scanner.nextInt();
-    scanner.nextLine(); // Consume newline
+    scanner.nextLine(); 
 
     System.out.print("Enter Title: ");
     String title = scanner.nextLine();
@@ -292,9 +291,6 @@ public class LibraryManagementSystem {
         Book newBook = new Book(nextId, title, author, year, popularityCount, price);
         library.addPublication(newBook);
         System.out.println("Book added successfully.");
-
-        // Save the new book to the file
-       // savePublicationToFile(newBook);
     } else if (publicationType == 2) {
         // Magazine
         scanner.nextLine(); // Consume newline
@@ -323,9 +319,6 @@ public class LibraryManagementSystem {
         Magazine newMagazine = new Magazine(nextId, title, authors, publisherCompany, popularityCount, price);
         library.addPublication(newMagazine);
         System.out.println("Magazine added successfully.");
-
-        // Save the new magazine to the file
-       // savePublicationToFile(newMagazine);
     } else if (publicationType == 3) {
         // Newspaper
         System.out.print("Enter Publisher Company: ");
@@ -338,9 +331,6 @@ public class LibraryManagementSystem {
         Newspaper newNewspaper = new Newspaper(nextId, title, publisherCompany,popularityCount, publicationDay);
         library.addPublication(newNewspaper);
         System.out.println("Newspaper added successfully.");
-
-        // Save the new newspaper to the file
-        //savePublicationToFile(newNewspaper);
     } else {
         System.out.println("Invalid publication type.");
     }
@@ -433,18 +423,6 @@ public class LibraryManagementSystem {
         publication.displayInfo();
     }
     }
-
-//    private static void viewPublicationById(Scanner scanner, Library library) {
-//        System.out.print("Enter Publication ID to View: ");
-//        int id = scanner.nextInt();
-//        Publication publication = library.getPublicationById(id);
-//        if (publication != null) {
-//            publication.display();
-//        } else {
-//            System.out.println("Publication with ID " + id + " not found.");
-//        }
-//    }
-
     private static void loadDataFromFile(Library library) {
   String filePath = "C:\\Users\\Shehzad Alam\\Desktop\\data.txt";
 
