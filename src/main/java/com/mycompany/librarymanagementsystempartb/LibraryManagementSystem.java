@@ -20,6 +20,7 @@ import java.util.Arrays;
 import java.util.Date;
 import java.util.List;
 import java.util.Scanner;
+import java.util.stream.Collectors;
 interface Configuration {
     void displayInfo();
 }
@@ -164,11 +165,78 @@ class Newspaper extends Publication {
         System.out.println("Popularity Count: "+ popularityCount);
         System.out.println("Publication Day: " + publicationDay);
     }
-   
     }
+ class Borrower {
+    private int userId;
+    private String name;
+    private List<Integer> borrowedItems; // Store item IDs of borrowed items
+     public Borrower() {
+        borrowedItems = new ArrayList<>(); // Initialize the list here
+    }
+
+ public int getUserId() {
+        return userId;
+    }
+    public void setUserId(int userId) {
+        this.userId = userId;
+    }
+    public String getName() {
+        return name;
+    }
+    public void setName(String name) {
+        this.name = name;
+    }
+    public List<Integer> getBorrowedItems() {
+        return borrowedItems;
+    }
+    public void setBorrowedItems(List<Integer> borrowedItems) {
+        this.borrowedItems = borrowedItems;
+    }
+    public void borrowItem(int itemId) {
+        borrowedItems.add(itemId);
+    }
+    public void returnItem(int itemId) {
+        borrowedItems.remove(Integer.valueOf(itemId));
+    }
+}
+class LibraryItem extends Publication {
+    private boolean isBorrowed;
+    private int borrowerId;
+    private int popularityCount;
+    public LibraryItem(int id, String title, int popularityCount) {
+        super(id, title);
+        this.popularityCount = popularityCount;
+    }
+    public boolean isBorrowed() {
+        return isBorrowed;
+    }
+    public void setBorrowed(boolean borrowed) {
+        isBorrowed = borrowed;
+    }
+    public int getBorrowerId() {
+        return borrowerId;
+    }
+    public void setBorrowerId(int borrowerId) {
+        this.borrowerId = borrowerId;
+    }
+    public int getPopularityCount() {
+        return popularityCount;
+    }
+    public void setPopularityCount(int popularityCount) {
+        this.popularityCount = popularityCount;
+    }
+}
 class Library {
     private List<Publication> publications = new ArrayList<>();
-
+  private List<LibraryItem> libraryItems = new ArrayList<>();
+    private List< Borrower> borrowers;
+      public Library() {
+        libraryItems = new ArrayList<>();
+        borrowers = new ArrayList<>();
+    }
+      public List<Borrower> getBorrowers() {
+    return borrowers;
+}
     public void addPublication(Publication publication) {
         publications.add(publication);
     }
@@ -212,11 +280,89 @@ class Library {
         }
         return null;
     }
+       public void addLibraryItem(LibraryItem item) {
+        libraryItems.add(item);
+    }
+
+    public void addBorrower(Borrower borrower) {
+        borrowers.add(borrower);
+    }
+     public void borrowItem(int userId, int itemId) {
+    Borrower borrower = findBorrower(userId);
+    LibraryItem item = findLibraryItem(itemId);
+
+    if (borrower != null && item != null && !item.isBorrowed()) {
+        borrower.borrowItem(itemId);
+        item.setBorrowed(true);
+        item.setBorrowerId(userId);
+        // Increase popularity count when an item is borrowed
+        item.setPopularityCount(item.getPopularityCount() + 1);
+    }
+}
+     public void returnItem(int userId, int itemId) {
+    Borrower borrower = findBorrower(userId);
+    LibraryItem item = findLibraryItem(itemId);
+
+    if (borrower != null && item != null && borrower.getBorrowedItems().contains(itemId)) {
+        borrower.returnItem(itemId);
+        item.setBorrowed(false);
+        item.setBorrowerId(0);
+    }
+}
+   public void updatePopularityCount(int itemId, int popularityCount) {
+    LibraryItem item = findLibraryItem(itemId);
+    if (item != null) {
+        item.setPopularityCount(popularityCount);
+    }
 }
 
+    public void displayBorrowers() {
+        for (Borrower borrower : borrowers) {
+            System.out.println("---------------");
+            System.out.println("Borrower ID: " + borrower.getUserId());
+            System.out.println("Borrower Name: " + borrower.getName());
+            List<String> borrowedItemTitles = borrower.getBorrowedItems().stream()
+                    .map(itemId -> findLibraryItem(itemId).getTitle())
+                    .collect(Collectors.toList());
+            System.out.println("Borrowed Items: " + String.join(", ", borrowedItemTitles));
+            System.out.println();
+        }
+    }
+
+    public void displayHotPicks() {
+        List<LibraryItem> hotPicks = libraryItems.stream()
+                .sorted((item1, item2) -> Integer.compare(item2.getPopularityCount(), item1.getPopularityCount()))
+                .collect(Collectors.toList());
+
+        System.out.println("Hot Picks:");
+        for (LibraryItem item : hotPicks) {
+              System.out.println("---------------");
+            System.out.println("Title: " + item.getTitle());
+            System.out.println("Popularity Count: " + item.getPopularityCount());
+            System.out.println();
+        }
+    }
+
+    public Borrower findBorrower(int userId) {
+        return borrowers.stream()
+                .filter(borrower -> borrower.getUserId() == userId)
+                .findFirst()
+                .orElse(null);
+    }
+
+    public LibraryItem findLibraryItem(int itemId) {
+        for (LibraryItem item : libraryItems) {
+        if (item.getId() == itemId) {
+            return item;
+        }
+    }
+    return null;
+    }
+}
 public class LibraryManagementSystem {
+
     public static void main(String[] args) {
-          Library library = new Library();
+       Library library = new Library();
         loadDataFromFile(library);
         
         Scanner scanner = new Scanner(System.in);
@@ -229,7 +375,11 @@ public class LibraryManagementSystem {
             System.out.println("3. Delete a Publication");
             System.out.println("4. View All Publications");
             System.out.println("5. View Publication by ID");
-            System.out.println("6. Exit");
+            System.out.println("6. Hot Picks!");
+            System.out.println("7. Borrow an Item");
+            System.out.println("8. Return Book");
+            System.out.println("9. View Borrowers List");
+            System.out.println("10. Exit");
             System.out.print("Enter your choice: ");
             choice = scanner.nextInt();
 
@@ -257,13 +407,29 @@ public class LibraryManagementSystem {
                     library.displayPublicationDetails(publicationToView);
                     break;
                 case 6:
-                    // Exit
+                     // Display Hot Picks
+    library.displayHotPicks();
+    break;
+                    case 7:
+    // Borrow a book
+    borrowBook(scanner, library);
+    break;
+case 8:
+    // Return a book
+    returnBook(scanner, library);
+    break;
+case 9:
+    // Display Borrowers
+    library.displayBorrowers();
+    break;
+case 10:
+   // Exit
                     System.out.println("Exiting Library Management System.");
                     break;
                 default:
                     System.out.println("Invalid choice. Please try again.");
             }
-        } while (choice != 6);
+        } while (choice != 10);
 
         scanner.close();
     }
@@ -290,6 +456,9 @@ public class LibraryManagementSystem {
         int nextId = library.getAllPublications().size() + 1;
         Book newBook = new Book(nextId, title, author, year, popularityCount, price);
         library.addPublication(newBook);
+         LibraryItem libraryItem = new LibraryItem(nextId, title, popularityCount);
+        libraryItem.setBorrowed(false);
+        library.addLibraryItem(libraryItem);
         System.out.println("Book added successfully.");
     } else if (publicationType == 2) {
         // Magazine
@@ -318,6 +487,9 @@ public class LibraryManagementSystem {
         int nextId = library.getAllPublications().size() + 1;
         Magazine newMagazine = new Magazine(nextId, title, authors, publisherCompany, popularityCount, price);
         library.addPublication(newMagazine);
+         LibraryItem newLibraryItem = new LibraryItem(nextId, title, popularityCount);
+        newLibraryItem.setBorrowed(false);
+        library.addLibraryItem(newLibraryItem);
         System.out.println("Magazine added successfully.");
     } else if (publicationType == 3) {
         // Newspaper
@@ -330,6 +502,9 @@ public class LibraryManagementSystem {
         int nextId = library.getAllPublications().size() + 1;
         Newspaper newNewspaper = new Newspaper(nextId, title, publisherCompany,popularityCount, publicationDay);
         library.addPublication(newNewspaper);
+        LibraryItem newLibraryItem = new LibraryItem(nextId, title, popularityCount);
+        newLibraryItem.setBorrowed(false);
+        library.addLibraryItem(newLibraryItem);
         System.out.println("Newspaper added successfully.");
     } else {
         System.out.println("Invalid publication type.");
@@ -423,6 +598,69 @@ public class LibraryManagementSystem {
         publication.displayInfo();
     }
     }
+    private static void borrowBook(Scanner scanner, Library library) {
+      System.out.print("Enter the ID of the book you want to borrow: ");
+    int bookId = scanner.nextInt();
+
+    // Check if the book exists in the library
+    LibraryItem bookToBorrow = library.findLibraryItem(bookId);
+    System.out.println(bookToBorrow );
+    if (bookToBorrow == null) {
+        System.out.println("Book not found.");
+        return;
+    }
+
+    // Check if the book is already borrowed
+    if (bookToBorrow.isBorrowed()) {
+        System.out.println("This book is already borrowed by another user.");
+        return;
+    }
+
+    // Borrow the book
+    System.out.print("Enter your name: ");
+    String userName = scanner.next();
+    Borrower borrower = new Borrower();
+    borrower.setName(userName);
+    borrower.setUserId(library.getBorrowers().size() + 1); // Generate a unique user ID
+    library.addBorrower(borrower);
+bookToBorrow.setPopularityCount(bookToBorrow.getPopularityCount());
+    library.borrowItem(borrower.getUserId(), bookId);
+    System.out.println(userName + ", you have successfully borrowed the book: " + bookToBorrow.getTitle());
+}
+
+private static void returnBook(Scanner scanner, Library library) {
+    System.out.print("Enter your User ID: ");
+    int userId = scanner.nextInt();
+
+    // Check if the user exists in the library
+    Borrower borrower = library.findBorrower(userId);
+
+    if (borrower == null) {
+        System.out.println("User not found. Please register as a borrower first.");
+        return;
+    }
+
+    System.out.print("Enter the ID of the book you want to return: ");
+    int bookId = scanner.nextInt();
+
+    // Check if the book exists in the library
+    LibraryItem bookToReturn = library.findLibraryItem(bookId);
+
+    if (bookToReturn == null) {
+        System.out.println("Book not found.");
+        return;
+    }
+
+    // Check if the user has borrowed this book
+    if (!borrower.getBorrowedItems().contains(bookId)) {
+        System.out.println(borrower.getName() + ", you haven't borrowed this book.");
+        return;
+    }
+
+    // Return the book
+    library.returnItem(userId, bookId);
+    System.out.println(borrower.getName() + ", you have successfully returned the book: " + bookToReturn.getTitle());
+}
     private static void loadDataFromFile(Library library) {
   String filePath = "C:\\Users\\Shehzad Alam\\Desktop\\data.txt";
 
@@ -434,7 +672,11 @@ public class LibraryManagementSystem {
                 int id = Integer.parseInt(parts[0]);
                 String title = parts[1];
                 //String type = parts[2];
-                
+                 if (id == 1 || id == 2 || id == 3) {
+                int popularityCount = Integer.parseInt(parts[parts.length - 2]);
+                LibraryItem libraryItem = new LibraryItem(id, title, popularityCount);
+                library.addLibraryItem(libraryItem);
+                 }
                 if (1==id) {
                     String author = parts[2];
                     int year = Integer.parseInt(parts[3]);
@@ -477,4 +719,4 @@ public class LibraryManagementSystem {
         e.printStackTrace();
     }
     }
-}
+    }
